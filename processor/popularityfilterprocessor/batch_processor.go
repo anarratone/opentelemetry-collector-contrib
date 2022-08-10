@@ -166,13 +166,14 @@ func newTracesProcessor(set component.ProcessorCreateSettings, next consumer.Tra
 
 type batchTraces struct {
 	nextConsumer consumer.Traces
-	traceData    ptrace.Traces
+	batchesData  map[string]ptrace.Traces
 	spanCount    int
 	sizer        ptrace.Sizer
 }
 
 func newBatchTraces(nextConsumer consumer.Traces) *batchTraces {
-	return &batchTraces{nextConsumer: nextConsumer, traceData: ptrace.NewTraces(), sizer: ptrace.NewProtoMarshaler().(ptrace.Sizer)}
+    m := make(map[string]ptrace.Traces)
+	return &batchTraces{nextConsumer: nextConsumer, batchTraces: m, sizer: ptrace.NewProtoMarshaler().(ptrace.Sizer)}
 }
 
 // add updates current batchTraces by adding new TraceData object
@@ -184,6 +185,12 @@ func (bt *batchTraces) add(item interface{}) {
 	}
 
 	bt.spanCount += newSpanCount
+
+    // TODO: Access the spans in the traces, hash their operation name, and add the corresponding
+    opName := td.ResourceSpans()[0].Spans()[0].operation
+
+    hash := doSomething(opName)
+    bt.batchesData[hash] = // append td
 	td.ResourceSpans().MoveAndAppendTo(bt.traceData.ResourceSpans())
 }
 
